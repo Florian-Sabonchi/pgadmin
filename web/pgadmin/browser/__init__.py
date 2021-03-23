@@ -52,6 +52,8 @@ from pgadmin.model import User
 from pgadmin.utils.constants import MIMETYPE_APP_JS, PGADMIN_NODE,\
     INTERNAL, KERBEROS, LDAP
 
+from pgadmin.utils.constants import OAUTH
+
 try:
     from flask_security.views import default_render_json
 except ImportError as e:
@@ -605,12 +607,13 @@ class BrowserPluginModule(PgAdminModule):
 
 
 def _get_logout_url():
-    if config.SERVER_MODE and\
-            session['_auth_source_manager_obj']['current_source'] == \
-            KERBEROS:
-        return '{0}?next={1}'.format(url_for(
-            'authenticate.kerberos_logout'), url_for(BROWSER_INDEX))
-
+    if config.SERVER_MODE:
+        if session['_auth_source_manager_obj']['current_source'] == KERBEROS:
+            return '{0}?next={1}'.format(url_for(
+                'authenticate.kerberos_logout'), url_for(BROWSER_INDEX))
+        elif session['_auth_source_manager_obj']['current_source'] == OAUTH:
+            return '{0}?next={1}'.format(url_for(
+                'authenticate.oauth_logout'), url_for(BROWSER_INDEX))
     return '{0}?next={1}'.format(
         url_for('security.logout'), url_for(BROWSER_INDEX))
 
@@ -987,8 +990,9 @@ def set_master_password():
         data = json.loads(data)
 
     # Master password is not applicable for server mode
-    if not config.SERVER_MODE and config.MASTER_PASSWORD_REQUIRED:
-
+    # Enable master password if oauth is used
+    if not config.SERVER_MODE or OAUTH in config.AUTHENTICATION_SOURCES\
+            and config.MASTER_PASSWORD_REQUIRED:
         # if master pass is set previously
         if current_user.masterpass_check is not None and \
             data.get('button_click') and \
@@ -1025,7 +1029,7 @@ def set_master_password():
                 existing=True,
                 present=False,
             )
-        elif not get_crypt_key()[0]:
+        elif not get_crypt_key()[1]:
             error_message = None
             if data.get('button_click') and data.get('password') == '':
                 # If user attempted to enter a blank password, then throw error

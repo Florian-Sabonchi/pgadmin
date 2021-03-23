@@ -530,11 +530,10 @@ ENHANCED_COOKIE_PROTECTION = True
 # External Authentication Sources
 ##########################################################################
 
-# Default setting is internal
-# External Supported Sources: ldap, kerberos
+# Default setting is internal External Supported Sources: ldap, kerberos
 # Multiple authentication can be achieved by setting this parameter to
-# ['ldap', 'internal']. pgAdmin will authenticate the user with ldap first,
-# in case of failure internal authentication will be done.
+# ['ldap', 'internal', 'oauth2']. pgAdmin will authenticate the user with ldap
+# first, in case of failure internal authentication will be done.
 
 AUTHENTICATION_SOURCES = ['internal']
 
@@ -614,7 +613,6 @@ LDAP_CA_CERT_FILE = ''
 LDAP_CERT_FILE = ''
 LDAP_KEY_FILE = ''
 
-
 ##########################################################################
 # Kerberos Configuration
 ##########################################################################
@@ -636,6 +634,18 @@ KRB_AUTO_CREATE_USER = True
 
 KERBEROS_CCACHE_DIR = os.path.join(DATA_DIR, 'krbccache')
 
+
+##########################################################################
+# OAuth2
+##########################################################################
+
+OAUTH2_NAME = None
+OAUTH2_CLIENT_ID = None
+OAUTH2_CLIENT_SECRET = None
+OAUTH2_TOKEN_URL = None
+OAUTH2_AUTHORIZATION_URL = None
+OAUTH2_API_BASE_URL = None
+OAUTH2_USERINFO_ENDPOINT = None
 
 ##########################################################################
 # Local config settings

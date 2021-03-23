@@ -8,6 +8,7 @@
 ##########################################################################
 
 """A blueprint module implementing the Authentication."""
+from typing import Optional, Any
 
 import flask
 import pickle
@@ -16,21 +17,31 @@ from flask import current_app, flash, Response, request, url_for,\
 from flask_babelex import gettext
 from flask_security import current_user, login_required
 from flask_security.views import _security, _ctx
-from flask_security.utils import config_value, get_post_logout_redirect, \
+from flask_security.utils import config_value, get_post_logout_redirect \
+
+from flask import current_app, flash, Response, request, url_for, \
+    render_template, redirect
+from flask_babelex import gettext
+from flask_login import current_user
+from flask_security.views import _security
+from flask_security.utils import get_post_logout_redirect, \
     get_post_login_redirect, logout_user
 from pgadmin.utils.ajax import make_json_response, internal_server_error
 import os
 
 from flask import session
 
-import config
 from pgadmin.utils import PgAdminModule
 from pgadmin.utils.constants import KERBEROS
 from pgadmin.utils.csrf import pgCSRFProtect
 
-from .registry import AuthSourceRegistry
+from pgadmin.authenticate.registry import AuthSourceRegistry
+from pgadmin.utils.constants import OAUTH
+import config
+import requests
 
 MODULE_NAME = 'authenticate'
+auth_obj = None
 
 
 class AuthenticateModule(PgAdminModule):
@@ -39,10 +50,35 @@ class AuthenticateModule(PgAdminModule):
                 'authenticate.kerberos_login',
                 'authenticate.kerberos_logout',
                 'authenticate.kerberos_update_ticket',
-                'authenticate.kerberos_validate_ticket']
+                'authenticate.kerberos_validate_ticket',
+                'authenticate.oauth_authorize',
+                'authenticate.oauth_logout']
 
 
 blueprint = AuthenticateModule(MODULE_NAME, __name__, static_url_path='')
+
+
+@blueprint.route('oauth_authorize', methods=['GET', 'POST'])
+@pgCSRFProtect.exempt
+def oauth_authorize():
+    source = get_auth_sources(OAUTH)
+    status = source.login(auth_obj)
+    if status:
+        session['_auth_source_manager_obj'] = auth_obj.as_dict()
+        return flask.redirect(get_post_login_redirect())
+    logout_user()
+    return flask.redirect(get_post_login_redirect())
+
+
+@blueprint.route('oauth_logout', methods=['GET', 'POST'])
+@pgCSRFProtect.exempt
+def oauth_logout():
+    if not current_user.is_authenticated:
+        return flask.redirect(get_post_logout_redirect())
+    for key in list(session.keys()):
+        session.pop(key)
+    logout_user()
+    return flask.redirect(get_post_logout_redirect())
 
 
 @blueprint.route("/login/kerberos",
@@ -78,9 +114,9 @@ def login():
     The user input will be validated and authenticated.
     """
     form = _security.login_form()
+    global auth_obj
     auth_obj = AuthSourceManager(form, config.AUTHENTICATION_SOURCES)
     session['_auth_source_manager_obj'] = None
-
     # Validate the user
     if not auth_obj.validate():
         for field in form.errors:
@@ -92,8 +128,11 @@ def login():
     status, msg = auth_obj.authenticate()
     if status:
         # Login the user
+        if 'oauth_button' in request.form:
+            return session['provider'].authorize_redirect(msg)
         status, msg = auth_obj.login()
         current_auth_obj = auth_obj.as_dict()
+
         if not status:
             if current_auth_obj['current_source'] ==\
                     KERBEROS:
@@ -102,7 +141,6 @@ def login():
 
             flash(msg, 'danger')
             return flask.redirect(get_post_logout_redirect())
-
         session['_auth_source_manager_obj'] = current_auth_obj
         return flask.redirect(get_post_login_redirect())
 
@@ -113,9 +151,10 @@ def login():
     return response
 
 
-class AuthSourceManager():
+class AuthSourceManager:
     """This class will manage all the authentication sources.
      """
+
     def __init__(self, form, sources):
         self.form = form
         self.auth_sources = sources
@@ -178,6 +217,9 @@ class AuthSourceManager():
                     source.get_source_name() == KERBEROS:
                 msg = gettext('pgAdmin internal user authentication'
                               ' is not enabled, please contact administrator.')
+                continue
+            if 'oauth_button' not in request.form and \
+                    source.get_source_name() == OAUTH:
                 continue
 
             status, msg = source.authenticate(self.form)

@@ -29,6 +29,10 @@ msgstr ""
 msgid "403 FORBIDDEN"
 msgstr ""
 
+#: pgadmin/__init__.py:332 pgadmin/authenticate/internal.py:712
+msgid "OAuth is disabled because master password is required."
+msgstr ""
+
 #: pgadmin/about/__init__.py:36
 #, python-format
 msgid "About %(appname)s"
@@ -191,6 +195,9 @@ msgstr ""
 
 #: pgadmin/authenticate/ldap.py:270
 msgid "Could not find the specified user."
+#: pgadmin/authenticate/oauth.py:16
+#: pgadmin/templates/security/login_user.html:29
+msgid "Log in with oauth"
 msgstr ""
 
 #: pgadmin/authenticate/registry.py:50
