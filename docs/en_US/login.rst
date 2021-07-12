@@ -56,3 +56,10 @@ Please note that your LDAP password cannot be recovered using this dialog. If
 you enter your LDAP username in the *Email Address/Username* field, and then
 enter your email to recover your password, an error message will be displayed
 asking you to contact the LDAP administrator to recover your LDAP password.
+
+Avoiding a bruteforce attack
+**************************
+
+You have the possibility to lock an account by setting ``MAX_LOGIN_ATTEMPTS``
+once it has reached the maximum number of login attempts.
+You can disable this feature by setting the value to zero.
