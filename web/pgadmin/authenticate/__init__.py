@@ -62,6 +62,12 @@ def login():
             user.locked = False
         db.session.commit()
 
+        if user.login_attempts >= config.MAX_LOGIN_ATTEMPTS > 0:
+            flash(gettext('Account locked'),
+                  'warning')
+            logout_user()
+            return redirect(get_post_logout_redirect())
+
     # Validate the user
     if not auth_obj.validate():
         for field in form.errors:
@@ -79,13 +85,6 @@ def login():
         # Login the user
         status, msg = auth_obj.login()
         current_auth_obj = auth_obj.as_dict()
-
-        if status:
-            if user.login_attempts >= config.MAX_LOGIN_ATTEMPTS > 0:
-                flash(gettext('Account locked'),
-                      'warning')
-                logout_user()
-                return redirect(get_post_logout_redirect())
 
         if not status:
             if current_auth_obj['current_source'] == \
