@@ -777,10 +777,8 @@ def create_app(app_name=None):
         # but the user session may still be active. Logout the user
         # to get the key again when login
         if config.SERVER_MODE and current_user.is_authenticated and \
-                app.PGADMIN_EXTERNAL_AUTH_SOURCE != \
-                KERBEROS and app.PGADMIN_EXTERNAL_AUTH_SOURCE != \
-                OAUTH2 and\
-                current_app.keyManager.get() is None and \
+            app.PGADMIN_EXTERNAL_AUTH_SOURCE == INTERNAL and \
+            current_app.keyManager.get() is None and \
                 request.endpoint not in ('security.login', 'security.logout'):
             logout_user()
 

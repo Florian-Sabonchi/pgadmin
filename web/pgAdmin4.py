@@ -103,7 +103,10 @@ if config.SERVER_MODE:
     app.wsgi_app = ReverseProxied(app.wsgi_app)
 
 # Authentication sources
-if len(config.AUTHENTICATION_SOURCES) > 0:
+if len(config.AUTHENTICATION_SOURCES) > 1 and \
+        config.AUTHENTICATION_SOURCES[1] != INTERNAL:
+    app.PGADMIN_EXTERNAL_AUTH_SOURCE = config.AUTHENTICATION_SOURCES[1]
+elif len(config.AUTHENTICATION_SOURCES) > 0:
     app.PGADMIN_EXTERNAL_AUTH_SOURCE = config.AUTHENTICATION_SOURCES[0]
 else:
     app.PGADMIN_EXTERNAL_AUTH_SOURCE = INTERNAL
