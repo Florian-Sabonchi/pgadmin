@@ -8,11 +8,12 @@
 ##########################################################################
 
 """A blueprint module implementing the Oauth2 authentication."""
+import requests as requests
 
 import config
 
 from authlib.integrations.flask_client import OAuth
-from flask import current_app, url_for, session, request,\
+from flask import current_app, url_for, session, request, \
     redirect, Flask, flash
 from flask_babelex import gettext
 from flask_security import login_user, current_user
@@ -91,7 +92,6 @@ class OAuth2Authentication(BaseAuthentication):
 
     def __init__(self):
         for oauth2_config in config.OAUTH2_CONFIG:
-
             OAuth2Authentication.oauth2_config[
                 oauth2_config['OAUTH2_NAME']] = oauth2_config
 
@@ -130,12 +130,27 @@ class OAuth2Authentication(BaseAuthentication):
 
         user, msg = self.__auto_create_user(profile)
         if user:
+            organizations = self.get_organizations(profile['organizations_url'])
+
+            for oauth2_config in config.OAUTH2_CONFIG:
+                allowed_organizations = oauth2_config['ALLOWED_ORGANIZATIONS']
+                if allowed_organizations:
+                    for organization in organizations:
+                        if organization['login'] not in allowed_organizations:
+                            return False, gettext("You are in an organization "
+                                                  "that is not on the "
+                                                  "whitelist")
+
             user = db.session.query(User).filter_by(
                 username=profile['email'], auth_source=OAUTH2).first()
             current_app.login_manager.logout_view = \
                 OAuth2Authentication.LOGOUT_VIEW
             return login_user(user), None
         return False, msg
+
+    def get_organizations(self, organizations_url: str):
+        organizations = requests.get(organizations_url)
+        return organizations.json()
 
     def get_user_profile(self):
         session['oauth2_token'] = self.oauth2_clients[

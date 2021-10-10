@@ -36,6 +36,7 @@ and modify the values for the following parameters:
     "OAUTH2_AUTO_CREATE_USER", "Set the value to *True* if you want to automatically
     create a pgAdmin user corresponding to a successfully authenticated Oauth2 user.
     Please note that password is not stored in the pgAdmin database."
+   "ALLOWED_ORGANIZATIONS", "Github organizations which are allowed. If the user is in an organization that is not in the list, logging in is not possible."
 
 Redirect URL
 ============

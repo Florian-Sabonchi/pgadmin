@@ -719,6 +719,8 @@ OAUTH2_CONFIG = [
         'OAUTH2_ICON': None,
         # UI button colour, ex: #0000ff
         'OAUTH2_BUTTON_COLOR': None,
+        # Allowed github organizations
+        'ALLOWED_ORGANIZATIONS': [''],
     }
 ]
 
